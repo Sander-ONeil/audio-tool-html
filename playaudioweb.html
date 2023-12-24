@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frequency Player</title>
+</head>
+<body>
+    <button onclick="playTone(400, 1)">Play 400Hz for 1 second</button>
+    <canvas id="audioCanvas" width="1024" height="300"></canvas>    
+    <script>
+// Create audio context
+var audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+// Function to create and return an audio buffer
+function createBuffer(arrayOfValues) {
+    // Create an empty stereo buffer at the sample rate of the AudioContext
+    var myArrayBuffer = audioContext.createBuffer(2, arrayOfValues.length, audioContext.sampleRate);
+    
+    // Fill the buffer with the values
+    for (var channel = 0; channel < myArrayBuffer.numberOfChannels; channel++) {
+        // This gives us the actual array that contains the data
+        var nowBuffering = myArrayBuffer.getChannelData(channel);
+        for (var i = 0; i < myArrayBuffer.length; i++) {
+            nowBuffering[i] = arrayOfValues[i];
+        }
+    }
+
+    return myArrayBuffer;
+}
+// Function to plot an audio buffer
+function plotBuffer(buffer) {
+    var canvas = document.getElementById('audioCanvas');
+    var ctx = canvas.getContext('2d');
+    
+    // Clear previous drawings
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    var data = buffer.getChannelData(0); // Get data from the first channel
+    var step = Math.ceil(data.length / canvas.width); // Determine the step to fit the canvas width
+    var amp = canvas.height / 2; // Amplitude scaling factor
+
+    ctx.beginPath();
+    for (var i = 0; i < data.length; i += step) {
+        var value = data[i] * amp; // Scale the value to fit the canvas height
+        var x = i / step; // X-coordinate
+        var y = amp - value; // Y-coordinate
+
+        // Draw line or rectangle
+        ctx.lineTo(x, y);
+        // For rectangles, you can use: ctx.fillRect(x, y, 1, value);
+    }
+    ctx.stroke();
+}
+// Function to play the buffer
+function playBuffer(buffer) {
+    var source = audioContext.createBufferSource(); // creates a sound source
+    source.buffer = buffer; // tell the source which sound to play
+    source.connect(audioContext.destination); // connect the source to the context's destination (the speakers)
+    source.start(0); // play the source now
+}
+
+// Function to generate tone data
+function generateToneData(frequency, duration) {
+    var sampleRate = audioContext.sampleRate;
+    var frameCount = sampleRate * duration;
+    var toneData = [];
+
+    for (var i = 0; i < frameCount; i++) {
+        toneData[i] = Math.sin(2 * Math.PI * frequency * i / sampleRate);
+    }
+
+    return toneData;
+}
+
+// Function to play a tone
+function playTone(frequency, duration) {
+    var toneData = generateToneData(frequency, duration);
+    var buffer = createBuffer(toneData);
+    
+    playBuffer(buffer);
+    plotBuffer(buffer);
+}
+
+// Example usage
+var myValues = [/* your array of values here */];
+var myBuffer = createBuffer(myValues);
+playBuffer(myBuffer);
+
+    </script>
+</body>
+</html>
