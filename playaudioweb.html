@@ -2,11 +2,40 @@
 <html>
 <head>
     <title>Frequency Player</title>
+    <style>
+        /* Style for the slider */
+        #frequencySlider, #graphCanvas,#audioCanvas {
+            width: 100%; /* Makes the slider and canvas take the full width of the page */
+            margin: 0 auto; /* Centering */
+        }
+    </style>
 </head>
 <body>
-    <button onclick="playTone(400, 1)">Play 400Hz for 1 second</button>
-    <canvas id="audioCanvas" width="1024" height="300"></canvas>    
+    <canvas id="graphCanvas" width="1024" height="300"></canvas>
+    <input type="range" id="frequencySlider" min="4.5" max="10.9657842847" value="5" step="0.01" list="tickmarks">
+    <datalist id="tickmarks">
+        <!-- Define your tick marks here -->
+        <option value="5"></option>
+        <option value="6"></option>
+        <option value="7"></option>
+        <option value="8"></option>
+        <option value="9"></option>
+        <option value="10"></option>
+        <!-- Add more ticks as needed -->
+    </datalist>
+    <button onclick="playToneWithCurrentFrequency()">Play Tone</button>
+    <canvas id="audioCanvas" width="1024" height="300"></canvas>  
     <script>
+        // [Your existing JavaScript code goes here...]
+
+        // Function to get the current frequency from the slider and play the tone
+        function playToneWithCurrentFrequency() {
+            var frequency = document.getElementById('frequencySlider').value;
+            playTone(frequency, 1);
+        }
+    </script>
+</body>
+</html><script>
 // Create audio context
 var audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -35,17 +64,19 @@ function plotBuffer(buffer) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     var data = buffer.getChannelData(0); // Get data from the first channel
-    var step = Math.ceil(data.length / canvas.width); // Determine the step to fit the canvas width
+    var step = Math.ceil(data.length / canvas.width);
+    var step = 1; // Determine the step to fit the canvas width
     var amp = canvas.height / 2; // Amplitude scaling factor
 
     ctx.beginPath();
     for (var i = 0; i < data.length; i += step) {
         var value = data[i] * amp; // Scale the value to fit the canvas height
-        var x = i / step; // X-coordinate
+        var x = i / data.length *canvas.width ; // X-coordinate
         var y = amp - value; // Y-coordinate
 
         // Draw line or rectangle
-        ctx.lineTo(x, y);
+        //ctx.lineTo(x, y);
+        ctx.fillRect(x, y, 0.1, value);
         // For rectangles, you can use: ctx.fillRect(x, y, 1, value);
     }
     ctx.stroke();
@@ -65,7 +96,7 @@ function generateToneData(frequency, duration) {
     var toneData = [];
 
     for (var i = 0; i < frameCount; i++) {
-        toneData[i] = Math.sin(2 * Math.PI * frequency * i / sampleRate);
+        toneData[i] = Math.sin(2 * Math.PI * frequency * i / sampleRate)*1/frequency*30;
     }
 
     return toneData;
@@ -80,10 +111,40 @@ function playTone(frequency, duration) {
     plotBuffer(buffer);
 }
 
+function playToneWithCurrentFrequency() {
+            var exp = document.getElementById('frequencySlider').value;
+            var frequency = Math.pow(2,exp);
+            playTone(frequency, 1);
+            //drawGraph();
+        }
+function drawGraph() {
+    var canvas = document.getElementById('graphCanvas');
+    var ctx = canvas.getContext('2d');
+
+    var min = 4;// document.getElementById('frequencySlider').min;
+    var max = 11;document.getElementById('frequencySlider').max;
+    // Clear the canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    var step = Math.ceil(100 / canvas.width); // Determine the step to fit the canvas width
+
+    for (var i = 0; i < canvas.width; i += 1) {
+
+        var x = i*(max-min)/canvas.width+min ; // X-coordinate
+        var y = Math.pow(2,x)*.1;
+
+        // Draw line or rectangle
+        //ctx.lineTo(x, y);
+        ctx.fillRect( canvas.width-i,canvas.height, 1, -y);
+        // For rectangles, you can use: ctx.fillRect(x, y, 1, value);
+    }
+ctx.stroke();
+}
+
+// Draw initial graph
+drawGraph();
+
 // Example usage
-var myValues = [/* your array of values here */];
-var myBuffer = createBuffer(myValues);
-playBuffer(myBuffer);
+
 
     </script>
 </body>
