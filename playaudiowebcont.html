@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frequency Player</title>
+    <style>
+        /* Style for the slider */
+        #frequencySlider,#frequencySlider2,#frequencySlider3,#frequencySlider4,  #graphCanvas,#audioCanvas {
+            width: 100%; /* Makes the slider and canvas take the full width of the page */
+            margin: 0 auto; /* Centering */
+        }
+    </style>
+</head>
+<body>
+    <canvas id="graphCanvas" width="1024" height="300"></canvas>
+    <input type="range" id="frequencySlider" oninput="updatesliders()" min="6" max="10.9657842847" value="8" step="0.01" list="tickmarks">
+    <datalist id="tickmarks">
+        <!-- Define your tick marks here -->
+        <option value="5"></option>
+        <option value="6"></option>
+        <option value="7"></option>
+        <option value="8"></option>
+        <option value="9"></option>
+        <option value="10"></option>
+        <!-- Add more ticks as needed -->
+    </datalist>
+    <span id="sliderValue1">8</span>
+    <button onclick="playToneWithCurrentFrequency()">Play Tone</button>
+    <input type="range" id="frequencySlider2" oninput="updatesliders()" min="6" max="10.9657842847" value="8" step="0.01" list="tickmarks">
+    <datalist id="tickmarks">
+        <!-- Define your tick marks here -->
+        <option value="5"></option>
+        <option value="6"></option>
+        <option value="7"></option>
+        <option value="8"></option>
+        <option value="9"></option>
+        <option value="10"></option>
+        <!-- Add more ticks as needed -->
+    </datalist>
+    <span id="sliderValue2">8</span>
+    <button onclick="playTonesWithCurrentFrequency()">Play 2 Tones</button>
+    <input type="range" id="frequencySlider3" oninput="updatesliders()" min="6" max="10.9657842847" value="8" step="0.01" list="tickmarks">
+    <datalist id="tickmarks">
+        <!-- Define your tick marks here -->
+        <option value="5"></option>
+        <option value="6"></option>
+        <option value="7"></option>
+        <option value="8"></option>
+        <option value="9"></option>
+        <option value="10"></option>
+        <!-- Add more ticks as needed -->
+    </datalist>
+    <span id="sliderValue3">8</span>
+    <input type="range" id="frequencySlider4"  oninput="updatesliders()"  min="6" max="10.9657842847" value="8" step="0.01" list="tickmarks">
+    <datalist id="tickmarks">
+        <!-- Define your tick marks here -->
+        <option value="5"></option>
+        <option value="6"></option>
+        <option value="7"></option>
+        <option value="8"></option>
+        <option value="9"></option>
+        <option value="10"></option>
+        <!-- Add more ticks as needed -->
+    </datalist>
+    <span id="sliderValue4">8</span>
+    <button onclick="play4TonesWithCurrentFrequency()">Play 4 Tones</button>
+    
+    <canvas id="audioCanvas" width="1024" height="300"></canvas>  
+    <script>
+
+        function updateSliderValue(sliderId, displayId) {
+            var slider = document.getElementById(sliderId);
+            var display = document.getElementById(displayId);
+            display.textContent =  Math.round(Math.pow(2,slider.value)) + ' Hz';
+        }
+
+        // Initialize slider values
+        function updatesliders(){
+        updateSliderValue('frequencySlider', 'sliderValue1');
+        updateSliderValue('frequencySlider2', 'sliderValue2');
+        updateSliderValue('frequencySlider3', 'sliderValue3');
+        updateSliderValue('frequencySlider4', 'sliderValue4');
+        //play4TonesWithCurrentFrequency();
+    }
+        // Function to get the current frequency from the slider and play the tone
+        function playToneWithCurrentFrequency() {
+            var frequency = document.getElementById('frequencySlider').value;
+            playTone(frequency, 1);
+        }
+    </script>
+</body>
+</html><script>
+// Create audio context
+var audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+// Function to create and return an audio buffer
+function createBuffer(arrayOfValues) {
+    // Create an empty stereo buffer at the sample rate of the AudioContext
+    var myArrayBuffer = audioContext.createBuffer(2, arrayOfValues.length, audioContext.sampleRate);
+    
+    // Fill the buffer with the values
+    for (var channel = 0; channel < myArrayBuffer.numberOfChannels; channel++) {
+        // This gives us the actual array that contains the data
+        var nowBuffering = myArrayBuffer.getChannelData(channel);
+        for (var i = 0; i < myArrayBuffer.length; i++) {
+            nowBuffering[i] = arrayOfValues[i];
+        }
+    }
+
+    return myArrayBuffer;
+}
+// Function to plot an audio buffer
+function plotBuffer(buffer) {
+    var canvas = document.getElementById('audioCanvas');
+    var ctx = canvas.getContext('2d');
+    
+    // Clear previous drawings
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    var data = buffer.getChannelData(0); // Get data from the first channel
+    var step = Math.ceil(data.length / canvas.width);
+    var step = 1; // Determine the step to fit the canvas width
+    var amp = canvas.height / 2; // Amplitude scaling factor
+    var sampleRate = audioContext.sampleRate;
+    ctx.beginPath();
+    for (var i = 0; i < canvas.width; i += step) {
+        var value = data[i] * amp; // Scale the value to fit the canvas height
+        var x = i; // X-coordinate
+        var y = amp - value; // Y-coordinate
+
+        // Draw line or rectangle
+        //ctx.lineTo(x, y);
+        ctx.fillRect(x, y, 1, value);
+        // For rectangles, you can use: ctx.fillRect(x, y, 1, value);
+    }
+    ctx.stroke();
+}
+// Function to play the buffer
+function playBuffer(buffer) {
+    var source = audioContext.createBufferSource(); // creates a sound source
+    source.buffer = buffer; // tell the source which sound to play
+    source.connect(audioContext.destination); // connect the source to the context's destination (the speakers)
+    source.start(0); // play the source now
+}
+
+// Function to generate tone data
+function generateToneData(frequency, duration) {
+    var sampleRate = audioContext.sampleRate;
+    var frameCount = sampleRate * duration/8.;
+    console.log(frameCount);
+    var toneData = [];
+
+    for (var i = 0; i < frameCount-10; i++) {
+        toneData[i] = Math.sin(2 * Math.PI * frequency * i / sampleRate)*1/frequency*30;
+        ///toneData[i] = ;
+    }
+    for (var i = 0; i < 100; i++ ) {
+        toneData[i] =Math.sin(2 * Math.PI * frequency * (100) / sampleRate)*1/frequency*30 * (i)/100;
+    }
+    for (var i = frameCount-100; i < frameCount; i++ ) {
+        toneData[i] =Math.sin(2 * Math.PI * frequency * (frameCount-100) / sampleRate)*1/frequency*30 * (frameCount-i)/100;
+    }
+
+
+    return toneData;
+}
+
+// Function to play a tone
+function playTone(frequency, duration) {
+    var toneData = generateToneData(frequency, duration);
+    var buffer = createBuffer(toneData);
+    
+    playBuffer(buffer);
+    plotBuffer(buffer);
+}
+function getTone(frequency, duration) {
+    var toneData = generateToneData(frequency, duration);
+    var buffer = createBuffer(toneData);
+    return(buffer);
+}
+function combineBuffer(buffer1,buffer2){
+    for (var i = 0; i < buffer1.length; i++){
+        buffer1[i] = buffer1[i]/2+buffer2[i]/2;
+    }
+    return buffer1;
+}
+function combine4Buffer(buffer1,buffer2,buffer3,buffer4){
+    for (var i = 0; i < buffer1.length; i++){
+        buffer1[i] = buffer1[i]/4+buffer2[i]/4+buffer3[i]/4+buffer4[i]/4;
+    }
+    return buffer1;
+}
+function playToneWithCurrentFrequency() {
+            var exp = document.getElementById('frequencySlider').value;
+            var frequency = Math.pow(2,exp);
+            playTone(frequency, 1);
+            //drawGraph();
+        }
+function playTonesWithCurrentFrequency() {
+    
+    var exp = document.getElementById('frequencySlider').value;
+    var frequency = Math.pow(2,exp);
+    var exp2 = document.getElementById('frequencySlider2').value;
+    var frequency2 = Math.pow(2,exp2);
+    var t1 = generateToneData(frequency, 1);
+    var t2 = generateToneData(frequency2, 1);
+    var buffer = createBuffer(combineBuffer(t1,t2));
+    playBuffer(buffer);
+    plotBuffer(buffer);
+    //drawGraph();
+}
+function play4TonesWithCurrentFrequency() {
+    var exp = document.getElementById('frequencySlider').value;
+    var frequency = Math.pow(2,exp);
+    var exp2 = document.getElementById('frequencySlider2').value;
+    var frequency2 = Math.pow(2,exp2);
+    var exp3 = document.getElementById('frequencySlider3').value;
+    var frequency3 = Math.pow(2,exp3);
+    var exp4 = document.getElementById('frequencySlider4').value;
+    var frequency4 = Math.pow(2,exp4);
+    var t1 = generateToneData(frequency, 1);
+    var t2 = generateToneData(frequency2, 1);
+    var t3 = generateToneData(frequency3, 1);
+    var t4 = generateToneData(frequency4, 1);
+
+    var buffer = createBuffer(combine4Buffer(t1,t2,t3,t4));
+    playBuffer(buffer);
+    plotBuffer(buffer);
+    //drawGraph();
+}
+function drawGraph() {
+    var canvas = document.getElementById('graphCanvas');
+    var ctx = canvas.getContext('2d');
+
+    var min = 4;// document.getElementById('frequencySlider').min;
+    var max = 11;document.getElementById('frequencySlider').max;
+    // Clear the canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    var step = Math.ceil(100 / canvas.width); // Determine the step to fit the canvas width
+
+    for (var i = 0; i < canvas.width; i += 1) {
+
+        var x = i*(max-min)/canvas.width+min ; // X-coordinate
+        var y = Math.pow(2,x)*.1;
+
+        // Draw line or rectangle
+        //ctx.lineTo(x, y);
+        ctx.fillRect( canvas.width-i,canvas.height, 1, -y);
+        // For rectangles, you can use: ctx.fillRect(x, y, 1, value);
+    }
+ctx.stroke();
+}
+
+// Draw initial graph
+drawGraph();
+
+// // Function to play all four tones continuously
+// function playContinuousTones() {
+    
+//     var currentTone = 0;
+//     var duration = 1; // Duration of each tone
+
+//     // Function to play the next tone
+//     var playNext = function( depth) {
+//         play4TonesWithCurrentFrequency();
+        
+//         if (depth>0){
+//         playNext(depth - 1);}
+//     };
+
+//     playNext(100); // Start playing tones
+// }
+// Modify play4TonesWithCurrentFrequency to accept a callback
+function play4TonesWithCurrentFrequency(onEndedCallback) {
+    // ...existing code to generate and combine tone data...
+    var exp = document.getElementById('frequencySlider').value;
+    var frequency = Math.pow(2,exp);
+    var exp2 = document.getElementById('frequencySlider2').value;
+    var frequency2 = Math.pow(2,exp2);
+    var exp3 = document.getElementById('frequencySlider3').value;
+    var frequency3 = Math.pow(2,exp3);
+    var exp4 = document.getElementById('frequencySlider4').value;
+    var frequency4 = Math.pow(2,exp4);
+    var t1 = generateToneData(frequency, 1);
+    var t2 = generateToneData(frequency2, 1);
+    var t3 = generateToneData(frequency3, 1);
+    var t4 = generateToneData(frequency4, 1);
+    var buffer = createBuffer(combine4Buffer(t1, t2, t3, t4));
+    var source = audioContext.createBufferSource(); // creates a sound source
+    source.buffer = buffer; // tell the source which sound to play
+    source.connect(audioContext.destination); // connect the source to the context's destination (the speakers)
+    source.onended = onEndedCallback; // Set the callback for when the audio ends
+    source.start(0); // play the source now
+
+    plotBuffer(buffer); // Optional: plot the buffer if needed
+}
+
+// Function to play all four tones continuously
+function playContinuousTones() {
+    var playNext = function() {
+        play4TonesWithCurrentFrequency(playNext); // Pass playNext as the callback
+    };
+
+    playNext(); // Start playing tones
+}
+
+// Call playContinuousTones to start the loop
+playContinuousTones();
+// Call playContinuousTones() to start the loop
+// playContinuousTones();
+// Example usage
+
+
+    </script>
+</body>
+</html>
